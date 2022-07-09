@@ -1,0 +1,67 @@
+import packages to your pubspec.yaml file : 
+
+-> path_provider
+-> dio
+-> file_picker
+-> open_file: ^3.2.1
+->permission_handler
+
+
+
+///this is code for pdf download data 
+Future openFile(url) async {
+    print("openFile call 000000");
+    PermissionStatus permissionStatus =
+    await Permission.storage.request();
+    if (permissionStatus == PermissionStatus.granted) {
+      var name = url.toString().split("/").last;
+      final file = await downloadFile(url,name);
+      print("openFile call 111111 file $file");
+
+      if(file == null) {
+        return ;
+      }
+      OpenFile.open(file.path);
+      Fluttertoast.showToast(
+          msg: "Storage Permisssion Access Successfully");
+    } else if (permissionStatus == PermissionStatus.denied) {
+      Fluttertoast.showToast(msg: "Storage Permisssion denined");
+    }
+
+  }
+
+  Future<File?> downloadFile(String url, name)async {
+    print("downloadFile call 000000");
+    final appStrorage = await getExternalStorageDirectory(); ///await ExtStorage.getExternalStoragePublicDirectory(ExtStorage.DIRECTORY_DOWNLOADS);
+    print("downloadFile call 1111111 $appStrorage");
+    final pathData =  appStrorage!.path.split("/Android")[0];
+    final file = File("${pathData}/Download/$name");
+    print("downloadFile call 22222 $file");
+
+    try {
+      print("downloadFile call try under");
+      final response = await Dio().get(url, onReceiveProgress: showDownloadProgress,options: Options(
+
+          responseType: ResponseType.bytes,
+          followRedirects: false,
+          receiveTimeout: 0
+      ));
+      print("downloadFile call truey 0000000 ${response.data}");
+
+      final raf = file.openSync(mode: FileMode.write);
+      print("downloadFile call truey 111111 ${raf}");
+      raf.writeFromSync(response.data);
+      print("downloadFile call truey 2222222222 ");
+      await raf.close();
+
+      return file;
+    } catch (e) {
+      print("downloadFile call cathc the eroe $e");
+      return null;
+    }
+  }
+
+  void showDownloadProgress (received, total){
+  if (total != -1){
+  print ((received/ total * 100). toStringAsFixed(0) + "%");}
+  }
